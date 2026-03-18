@@ -56,7 +56,7 @@ Ensure the 'puzzleGrid' is a 2D array of single uppercase letters.
 Finally, specify the 'gridSize' as an object with 'rows' and 'cols' representing the dimensions of the generated 'puzzleGrid'. This is important for the UI.
 
 Example for 'easy' difficulty with theme 'fruit':
-```json
+\`\`\`json
 {
   "wordList": ["APPLE", "BANANA", "GRAPE", "LEMON"],
   "puzzleGrid": [
@@ -74,7 +74,7 @@ Example for 'easy' difficulty with theme 'fruit':
     "cols": 8
   }
 }
-```
+\`\`\`
 
 Now generate the puzzle. Provide your response in JSON format only.`,
 });
