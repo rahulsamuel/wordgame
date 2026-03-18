@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -25,34 +26,41 @@ export default function GameGrid({ grid, onWordSelect, foundWordCoords, disabled
   const handleInteractionMove = (row: number, col: number) => {
     if (!isSelecting || disabled) return;
 
-    const lastCell = selection[selection.length - 1];
-    if (lastCell.row === row && lastCell.col === col) return;
+    const startCell = selection[0];
+    if (!startCell) return;
+    
+    // Check if the move creates a valid straight line (horizontal, vertical, or diagonal)
+    const deltaX = Math.abs(col - startCell.col);
+    const deltaY = Math.abs(row - startCell.row);
+    const isStraightLine = deltaX === 0 || deltaY === 0 || deltaX === deltaY;
 
-    // Check if cell is adjacent to the last one
-    const isAdjacent = Math.abs(lastCell.row - row) <= 1 && Math.abs(lastCell.col - col) <= 1;
-    if (!isAdjacent) return;
+    if (!isStraightLine) {
+        return; // Ignore moves that are not in a straight line from the start
+    }
 
-    // Check if cell is already in selection
-    const isAlreadySelected = selection.some(c => c.row === row && c.col === col);
-    if(isAlreadySelected) return;
+    const newSelection: Cell[] = [];
+    const endCell = { row, col };
 
-    // Ensure straight line
-    if (selection.length > 1) {
-      const first = selection[0];
-      const second = selection[1];
-      const dx = second.col - first.col;
-      const dy = second.row - first.row;
-      if (lastCell.row + dy !== row || lastCell.col + dx !== col) return;
+    const dx = endCell.col - startCell.col;
+    const dy = endCell.row - startCell.row;
+    const steps = Math.max(Math.abs(dx), Math.abs(dy));
+
+    for (let i = 0; i <= steps; i++) {
+        const iCol = startCell.col + (dx / steps) * i;
+        const iRow = startCell.row + (dy / steps) * i;
+        newSelection.push({ row: Math.round(iRow), col: Math.round(iCol) });
     }
     
-    setSelection(prev => [...prev, { row, col }]);
+    setSelection(newSelection);
   };
 
+
   const handleInteractionEnd = () => {
-    if (!isSelecting || disabled) return;
+    if (!isSelecting || !selection.length) return;
     
     if (selection.length > 1) {
       const selectedWord = selection.map(cell => grid[cell.row][cell.col]).join('');
+      // The AI can sometimes generate words backward, so we check both directions
       const reversedWord = selectedWord.split('').reverse().join('');
       onWordSelect(selectedWord, selection);
       onWordSelect(reversedWord, selection.slice().reverse());
@@ -71,22 +79,20 @@ export default function GameGrid({ grid, onWordSelect, foundWordCoords, disabled
   const getFoundCellColor = (row: number, col: number): string | undefined => {
     const index = foundWordCoords.findIndex(path => path.some(cell => cell.row === row && cell.col === col));
     if (index === -1) return undefined;
-    const colors = ['bg-accent/70', 'bg-primary/70', 'bg-green-400/70', 'bg-blue-400/70', 'bg-purple-400/70'];
+    const colors = ['bg-accent/70', 'bg-primary/70', 'bg-green-400/70', 'bg-blue-400/70', 'bg-purple-400/70', 'bg-orange-400/70', 'bg-pink-400/70'];
     return colors[index % colors.length];
   }
 
   useEffect(() => {
-    const gridElement = gridRef.current;
-    if (gridElement) {
-        gridElement.addEventListener('mouseup', handleInteractionEnd);
-        gridElement.addEventListener('mouseleave', handleInteractionEnd);
+    // These listeners handle interaction ending anywhere on the page, making it more robust.
+    if (isSelecting) {
+        window.addEventListener('mouseup', handleInteractionEnd);
+        window.addEventListener('touchend', handleInteractionEnd);
     }
     
     return () => {
-        if (gridElement) {
-            gridElement.removeEventListener('mouseup', handleInteractionEnd);
-            gridElement.removeEventListener('mouseleave', handleInteractionEnd);
-        }
+        window.removeEventListener('mouseup', handleInteractionEnd);
+        window.removeEventListener('touchend', handleInteractionEnd);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSelecting]);
@@ -97,12 +103,22 @@ export default function GameGrid({ grid, onWordSelect, foundWordCoords, disabled
 
   const gridCols = grid[0]?.length || 1;
 
+  // Helper to get the grid cell from a mouse or touch event
+  const getCellFromEvent = (e: React.MouseEvent | React.Touch) => {
+    const element = document.elementFromPoint(e.clientX, e.clientY);
+    const row = element?.getAttribute('data-row');
+    const col = element?.getAttribute('data-col');
+    if (row && col) {
+        return { row: parseInt(row), col: parseInt(col) };
+    }
+    return null;
+  }
+
   return (
     <div 
       ref={gridRef}
       className="bg-card p-4 rounded-2xl shadow-lg select-none"
-      style={{ touchAction: 'none' }}
-      onMouseUp={handleInteractionEnd}
+      style={{ touchAction: 'none' }} // Prevents default touch actions like scrolling
     >
       <div
         className="grid aspect-square"
@@ -127,20 +143,14 @@ export default function GameGrid({ grid, onWordSelect, foundWordCoords, disabled
                 onMouseDown={() => handleInteractionStart(row, col)}
                 onMouseEnter={() => handleInteractionMove(row, col)}
                 onTouchStart={(e) => {
-                    const touch = e.touches[0];
-                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-                    const elRow = element?.getAttribute('data-row');
-                    const elCol = element?.getAttribute('data-col');
-                    if(elRow && elCol) handleInteractionStart(parseInt(elRow), parseInt(elCol));
+                    const cell = getCellFromEvent(e.touches[0]);
+                    if(cell) handleInteractionStart(cell.row, cell.col);
                 }}
                 onTouchMove={(e) => {
-                    const touch = e.touches[0];
-                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-                    const elRow = element?.getAttribute('data-row');
-                    const elCol = element?.getAttribute('data-col');
-                    if(elRow && elCol) handleInteractionMove(parseInt(elRow), parseInt(elCol));
+                    e.preventDefault(); // Prevent scrolling while selecting a word
+                    const cell = getCellFromEvent(e.touches[0]);
+                    if(cell) handleInteractionMove(cell.row, cell.col);
                 }}
-                onTouchEnd={handleInteractionEnd}
                 data-row={row}
                 data-col={col}
               >
