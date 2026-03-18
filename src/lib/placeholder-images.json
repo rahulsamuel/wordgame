@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-image",
+      "description": "A playful and colorful illustration related to word games or learning, featuring abstract shapes and letters.",
+      "imageUrl": "https://picsum.photos/seed/1/1200/800",
+      "imageHint": "playful illustration"
+    }
+  ]
 }
