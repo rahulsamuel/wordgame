@@ -37,7 +37,11 @@ export default function GamePage() {
       });
       setGameState('setup');
     } else {
-      setPuzzleData(result);
+      const processedResult = {
+        ...result,
+        wordList: result.wordList.map((word) => word.toUpperCase()),
+      };
+      setPuzzleData(processedResult);
       setFoundWords([]);
       setFoundWordCoords([]);
       setScore(0);
