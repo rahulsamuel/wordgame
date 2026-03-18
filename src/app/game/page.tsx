@@ -9,10 +9,16 @@ import type { GameState, PuzzleData, Cell } from './types';
 import GameBoard from '@/components/game/game-board';
 import GameOverDialog from '@/components/game/game-over-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useUser } from '@/firebase/auth/use-user';
+import { UserProfileForm } from '@/components/auth/user-profile-form';
+import { updateUserScore } from '@/lib/firebase';
+import { useFirestore } from '@/firebase';
 
 const GAME_DURATION = 180; // 3 minutes
 
 export default function GamePage() {
+  const { user, loading: userLoading } = useUser();
+  const firestore = useFirestore();
   const [gameState, setGameState] = useState<GameState>('setup');
   const [puzzleData, setPuzzleData] = useState<PuzzleData | null>(null);
   const [foundWords, setFoundWords] = useState<string[]>([]);
@@ -65,6 +71,12 @@ export default function GamePage() {
 
     return () => clearInterval(timerId);
   }, [gameState, timeLeft]);
+  
+  useEffect(() => {
+    if (gameState === 'over' && user) {
+        updateUserScore(firestore, user.uid, score);
+    }
+  }, [gameState, user, score, firestore]);
 
   const handlePlayAgain = () => {
     setGameState('setup');
@@ -97,14 +109,27 @@ export default function GamePage() {
     if (!puzzleData) return [];
     return puzzleData.wordList.filter(word => !foundWords.includes(word));
   }, [puzzleData, foundWords]);
-
+  
   const renderContent = () => {
+    if(userLoading) {
+      return (
+        <div className="flex flex-col items-center gap-4 text-primary">
+          <Loader className="h-16 w-16 animate-spin" />
+          <p className="font-headline text-2xl">Loading your profile...</p>
+        </div>
+      );
+    }
+    
+    if (!user) {
+        return <UserProfileForm />;
+    }
+
     switch (gameState) {
       case 'setup':
         return (
           <Card className="w-full max-w-lg text-center shadow-xl">
             <CardHeader>
-              <CardTitle className="font-headline text-3xl">Ready for a challenge?</CardTitle>
+              <CardTitle className="font-headline text-3xl">Ready for a challenge, {user.displayName}?</CardTitle>
               <CardDescription>Find all the hidden words before the timer runs out!</CardDescription>
             </CardHeader>
             <CardContent>

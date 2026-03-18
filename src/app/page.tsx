@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ArrowRight, Puzzle } from 'lucide-react';
+import { ArrowRight, Puzzle, Award } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -32,6 +32,12 @@ export default function Home() {
                 <Button asChild size="lg" className="font-bold text-lg">
                   <Link href="/game">
                     Play Now! <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="font-bold text-lg">
+                  <Link href="/leaderboard">
+                    <Award className="mr-2 h-5 w-5" />
+                    Leaderboard
                   </Link>
                 </Button>
               </div>

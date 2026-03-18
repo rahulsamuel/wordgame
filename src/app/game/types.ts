@@ -8,3 +8,9 @@ export interface Cell {
   row: number;
   col: number;
 }
+
+export interface UserProfile {
+    id: string;
+    name: string;
+    score: number;
+}
