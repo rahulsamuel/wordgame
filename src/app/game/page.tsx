@@ -108,6 +108,9 @@ export default function GamePage() {
               <CardDescription>Find all the hidden words before the timer runs out!</CardDescription>
             </CardHeader>
             <CardContent>
+              <p className="text-muted-foreground mb-4 px-6">
+                Click and drag your mouse (or swipe on your screen) to highlight words in the grid.
+              </p>
               <Button size="lg" className="font-bold text-lg w-full" onClick={handleStartGame}>
                 <Sparkles className="mr-2 h-5 w-5" />
                 Start a New Game
