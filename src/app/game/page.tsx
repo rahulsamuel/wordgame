@@ -109,6 +109,26 @@ export default function GamePage() {
     if (!puzzleData) return [];
     return puzzleData.wordList.filter(word => !foundWords.includes(word));
   }, [puzzleData, foundWords]);
+
+  const handleHint = useCallback(() => {
+    if (gameState !== 'playing' || !puzzleData) return;
+
+    const missed = puzzleData.wordList.filter(word => !foundWords.includes(word));
+    
+    if (missed.length > 0) {
+      const hintWord = missed[Math.floor(Math.random() * missed.length)];
+      toast({
+        title: "Here's a hint!",
+        description: `Try looking for the word: "${hintWord}". (-5 points)`,
+      });
+      setScore(prev => prev - 5);
+    } else {
+      toast({
+        title: 'No hints needed!',
+        description: "You've already found all the words!",
+      });
+    }
+  }, [puzzleData, foundWords, gameState, toast]);
   
   const renderContent = () => {
     if(userLoading) {
@@ -160,6 +180,7 @@ export default function GamePage() {
             timeLeft={timeLeft}
             score={score}
             foundWordCoords={foundWordCoords}
+            onHintClick={handleHint}
           />
         );
       case 'over':
@@ -172,6 +193,7 @@ export default function GamePage() {
             score={score}
             foundWordCoords={foundWordCoords}
             isGameOver={true}
+            onHintClick={handleHint}
           />
         );
       default:

@@ -12,6 +12,7 @@ interface GameBoardProps {
   score: number;
   foundWordCoords: Cell[][];
   isGameOver?: boolean;
+  onHintClick: () => void;
 }
 
 export default function GameBoard({
@@ -22,6 +23,7 @@ export default function GameBoard({
   score,
   foundWordCoords,
   isGameOver = false,
+  onHintClick,
 }: GameBoardProps) {
   return (
     <div className="container mx-auto mt-16 lg:mt-0">
@@ -44,6 +46,8 @@ export default function GameBoard({
             <WordList
               words={puzzleData.wordList}
               foundWords={foundWords}
+              onHintClick={onHintClick}
+              disabled={isGameOver}
             />
         </div>
       </div>

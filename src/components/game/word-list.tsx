@@ -1,13 +1,16 @@
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { CheckCircle2, List } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card";
+import { CheckCircle2, List, Lightbulb } from "lucide-react";
+import { Button } from "../ui/button";
 
 interface WordListProps {
   words: string[];
   foundWords: string[];
+  onHintClick: () => void;
+  disabled?: boolean;
 }
 
-export default function WordList({ words, foundWords }: WordListProps) {
+export default function WordList({ words, foundWords, onHintClick, disabled = false }: WordListProps) {
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -36,6 +39,12 @@ export default function WordList({ words, foundWords }: WordListProps) {
           })}
         </ul>
       </CardContent>
+      <CardFooter>
+        <Button variant="outline" className="w-full" onClick={onHintClick} disabled={disabled}>
+          <Lightbulb className="mr-2 h-4 w-4" />
+          Get a Hint
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
