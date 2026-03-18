@@ -40,6 +40,7 @@ export default function GamePage() {
       const processedResult = {
         ...result,
         wordList: result.wordList.map((word) => word.toUpperCase()),
+        puzzleGrid: result.puzzleGrid.map(row => row.map(letter => letter.toUpperCase())),
       };
       setPuzzleData(processedResult);
       setFoundWords([]);
