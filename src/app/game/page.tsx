@@ -16,6 +16,49 @@ import { useFirestore } from '@/firebase';
 
 const GAME_DURATION = 180; // 3 minutes
 
+const findWordCoordinates = (grid: string[][], word: string): Cell[] | null => {
+  if (!grid || grid.length === 0 || !word) return null;
+  const rows = grid.length;
+  const cols = grid[0].length;
+  const len = word.length;
+
+  const directions = [
+      { r: 0, c: 1 },   // horizontal
+      { r: 1, c: 0 },   // vertical
+      { r: 1, c: 1 },   // diagonal-down-right
+      { r: 1, c: -1 },  // diagonal-down-left
+      { r: 0, c: -1 },  // horizontal-backward
+      { r: -1, c: 0 },  // vertical-backward
+      { r: -1, c: -1 }, // diagonal-up-left
+      { r: -1, c: 1 },  // diagonal-up-right
+  ];
+
+  for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+          if (grid[r][c] === word[0]) {
+              for (const dir of directions) {
+                  const coords: Cell[] = [];
+                  let found = true;
+                  for (let i = 0; i < len; i++) {
+                      const nextR = r + i * dir.r;
+                      const nextC = c + i * dir.c;
+
+                      if (nextR < 0 || nextR >= rows || nextC < 0 || nextC >= cols || grid[nextR][nextC] !== word[i]) {
+                          found = false;
+                          break;
+                      }
+                      coords.push({ row: nextR, col: nextC });
+                  }
+                  if (found) {
+                      return coords;
+                  }
+              }
+          }
+      }
+  }
+  return null;
+};
+
 export default function GamePage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
@@ -25,6 +68,7 @@ export default function GamePage() {
   const [foundWordCoords, setFoundWordCoords] = useState<Cell[][]>([]);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
   const [score, setScore] = useState(0);
+  const [hintCell, setHintCell] = useState<Cell | null>(null);
 
   const { toast } = useToast();
 
@@ -117,11 +161,29 @@ export default function GamePage() {
     
     if (missed.length > 0) {
       const hintWord = missed[Math.floor(Math.random() * missed.length)];
-      toast({
-        title: "Here's a hint!",
-        description: `Try looking for the word: "${hintWord}". (-5 points)`,
-      });
-      setScore(prev => prev - 5);
+      
+      const coords = findWordCoordinates(puzzleData.puzzleGrid, hintWord);
+
+      if (coords) {
+        const hintCoord = coords[Math.floor(Math.random() * coords.length)];
+        setHintCell(hintCoord);
+        toast({
+            title: "Here's a hint!",
+            description: `A letter is flashing for you. (-5 points)`,
+        });
+        setScore(prev => Math.max(0, prev - 5));
+
+        setTimeout(() => {
+            setHintCell(null);
+        }, 1000);
+
+      } else {
+        toast({
+            variant: 'destructive',
+            title: 'Hint failed',
+            description: "I couldn't find a word to give a hint for right now.",
+        });
+      }
     } else {
       toast({
         title: 'No hints needed!',
@@ -154,7 +216,7 @@ export default function GamePage() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4 px-6">
-                Click and drag your mouse (or swipe on your screen) to highlight words in the grid.
+                Click and drag your mouse (or swipe on your screen) to highlight words in the grid. Words can be horizontal, vertical, or diagonal.
               </p>
               <Button size="lg" className="font-bold text-lg w-full" onClick={handleStartGame}>
                 <Sparkles className="mr-2 h-5 w-5" />
@@ -181,6 +243,7 @@ export default function GamePage() {
             score={score}
             foundWordCoords={foundWordCoords}
             onHintClick={handleHint}
+            hintCell={hintCell}
           />
         );
       case 'over':
@@ -194,6 +257,7 @@ export default function GamePage() {
             foundWordCoords={foundWordCoords}
             isGameOver={true}
             onHintClick={handleHint}
+            hintCell={hintCell}
           />
         );
       default:

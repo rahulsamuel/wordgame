@@ -9,9 +9,10 @@ interface GameGridProps {
   onWordSelect: (word: string, coords: Cell[]) => void;
   foundWordCoords: Cell[][];
   disabled?: boolean;
+  hintCell: Cell | null;
 }
 
-export default function GameGrid({ grid, onWordSelect, foundWordCoords, disabled = false }: GameGridProps) {
+export default function GameGrid({ grid, onWordSelect, foundWordCoords, disabled = false, hintCell }: GameGridProps) {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selection, setSelection] = useState<Cell[]>([]);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -116,6 +117,9 @@ export default function GameGrid({ grid, onWordSelect, foundWordCoords, disabled
     const colors = ['bg-accent/70', 'bg-primary/70', 'bg-green-400/70', 'bg-blue-400/70', 'bg-purple-400/70', 'bg-orange-400/70', 'bg-pink-400/70'];
     return colors[index % colors.length];
   }
+  
+  const isHintCell = (row: number, col: number) =>
+    hintCell?.row === row && hintCell?.col === col;
 
   if (!grid || grid.length === 0) {
     return <div className="aspect-square w-full bg-muted rounded-lg flex items-center justify-center">Loading grid...</div>;
@@ -147,7 +151,8 @@ export default function GameGrid({ grid, onWordSelect, foundWordCoords, disabled
                   foundColor,
                   !foundColor && isSelecting && isCellSelected(row, col) && "bg-primary text-primary-foreground scale-110 shadow-lg",
                   !foundColor && !isCellSelected(row, col) && "bg-secondary",
-                  isCellFound(row,col) && "shadow-[0_0_15px_1px_hsl(var(--primary))]"
+                  isCellFound(row,col) && "shadow-[0_0_15px_1px_hsl(var(--primary))]",
+                  isHintCell(row, col) && "animate-blink bg-yellow-400/80 ring-4 ring-yellow-300/80"
                 )}
                 onMouseDown={() => handleInteractionStart(row, col)}
                 onTouchStart={(e) => {
