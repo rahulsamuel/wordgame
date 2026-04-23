@@ -21,10 +21,10 @@ export async function generatePuzzleAction(input: ThemedPuzzleGenerationInput): 
             };
         }
         return result as PuzzleGenerationResult;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error generating puzzle:", error);
         return { 
-            error: "I couldn't make a puzzle right now. Let's try again in a moment!",
+            error: `Error: ${error?.message || "Unknown error"}. Please try again in a moment!`,
             wordList: [],
             puzzleGrid: [],
             gridSize: { rows: 0, cols: 0 }
