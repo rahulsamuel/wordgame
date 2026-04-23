@@ -13,6 +13,7 @@ import { useUser } from '@/firebase/auth/use-user';
 import { updateUserScore, signOutUser, saveGameResult } from '@/lib/firebase';
 import { useFirestore, useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const GAME_DURATION = 180; // 3 minutes
 
