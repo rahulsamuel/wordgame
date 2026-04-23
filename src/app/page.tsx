@@ -15,6 +15,11 @@ export default function Home() {
             <Puzzle className="h-8 w-8" />
             <span>Word Scramble Dash</span>
           </Link>
+          <div className="flex gap-4">
+            <Button asChild variant="ghost">
+              <Link href="/login">Sign In</Link>
+            </Button>
+          </div>
         </div>
       </header>
 

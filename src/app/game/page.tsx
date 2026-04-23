@@ -13,7 +13,6 @@ import { useUser } from '@/firebase/auth/use-user';
 import { updateUserScore, signOutUser, saveGameResult } from '@/lib/firebase';
 import { useFirestore, useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { GameHistory } from '@/components/game/game-history';
 
 const GAME_DURATION = 180; // 3 minutes
 
@@ -250,9 +249,11 @@ export default function GamePage() {
                   <Sparkles className="mr-2 h-5 w-5" />
                   Start a New Game
                 </Button>
+                <Button variant="outline" asChild className="w-full mt-2">
+                  <Link href="/dashboard">View My Stats</Link>
+                </Button>
               </CardContent>
             </Card>
-            <GameHistory userId={user.uid} />
           </div>
         );
       case 'loading':
