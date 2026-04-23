@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader, Puzzle, Sparkles } from 'lucide-react';
+import { Loader, Puzzle, Sparkles, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generatePuzzleAction } from '../actions';
 import type { GameState, PuzzleData, Cell } from './types';
@@ -10,9 +10,10 @@ import GameBoard from '@/components/game/game-board';
 import GameOverDialog from '@/components/game/game-over-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser } from '@/firebase/auth/use-user';
-import { UserProfileForm } from '@/components/auth/user-profile-form';
-import { updateUserScore } from '@/lib/firebase';
-import { useFirestore } from '@/firebase';
+import { updateUserScore, signOutUser, saveGameResult } from '@/lib/firebase';
+import { useFirestore, useAuth } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { GameHistory } from '@/components/game/game-history';
 
 const GAME_DURATION = 180; // 3 minutes
 
@@ -60,8 +61,16 @@ const findWordCoordinates = (grid: string[][], word: string): Cell[] | null => {
 };
 
 export default function GamePage() {
+  const auth = useAuth();
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
+  
+  useEffect(() => {
+    if (!userLoading && !user) {
+      router.replace('/login');
+    }
+  }, [user, userLoading, router]);
   const [gameState, setGameState] = useState<GameState>('setup');
   const [puzzleData, setPuzzleData] = useState<PuzzleData | null>(null);
   const [foundWords, setFoundWords] = useState<string[]>([]);
@@ -87,10 +96,25 @@ export default function GamePage() {
       });
       setGameState('setup');
     } else {
+      const processedGrid = result.puzzleGrid.map(row => row.map(letter => letter.toUpperCase()));
+      const validWordList = result.wordList
+        .map((word) => word.toUpperCase())
+        .filter(word => findWordCoordinates(processedGrid, word) !== null);
+
+      if (validWordList.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Oops!',
+          description: "The AI created an invalid puzzle. Please try again.",
+        });
+        setGameState('setup');
+        return;
+      }
+
       const processedResult = {
         ...result,
-        wordList: result.wordList.map((word) => word.toUpperCase()),
-        puzzleGrid: result.puzzleGrid.map(row => row.map(letter => letter.toUpperCase())),
+        wordList: validWordList,
+        puzzleGrid: processedGrid,
       };
       setPuzzleData(processedResult);
       setFoundWords([]);
@@ -119,8 +143,11 @@ export default function GamePage() {
   useEffect(() => {
     if (gameState === 'over' && user) {
         updateUserScore(firestore, user.uid, score);
+        if (puzzleData) {
+            saveGameResult(firestore, user.uid, score, foundWords.length, puzzleData.wordList.length);
+        }
     }
-  }, [gameState, user, score, firestore]);
+  }, [gameState, user, score, firestore, puzzleData, foundWords.length]);
 
   const handlePlayAgain = () => {
     setGameState('setup');
@@ -203,27 +230,30 @@ export default function GamePage() {
     }
     
     if (!user) {
-        return <UserProfileForm />;
+        return null;
     }
 
     switch (gameState) {
       case 'setup':
         return (
-          <Card className="w-full max-w-lg text-center shadow-xl">
-            <CardHeader>
-              <CardTitle className="font-headline text-3xl">Ready for a challenge, {user.displayName}?</CardTitle>
-              <CardDescription>Find all the hidden words before the timer runs out!</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4 px-6">
-                Click and drag your mouse (or swipe on your screen) to highlight words in the grid. Words can be horizontal, vertical, or diagonal.
-              </p>
-              <Button size="lg" className="font-bold text-lg w-full" onClick={handleStartGame}>
-                <Sparkles className="mr-2 h-5 w-5" />
-                Start a New Game
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col items-center w-full max-w-lg">
+            <Card className="w-full text-center shadow-xl">
+              <CardHeader>
+                <CardTitle className="font-headline text-3xl">Ready for a challenge, {user.displayName}?</CardTitle>
+                <CardDescription>Find all the hidden words before the timer runs out!</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4 px-6">
+                  Click and drag your mouse (or swipe on your screen) to highlight words in the grid. Words can be horizontal, vertical, or diagonal.
+                </p>
+                <Button size="lg" className="font-bold text-lg w-full" onClick={handleStartGame}>
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  Start a New Game
+                </Button>
+              </CardContent>
+            </Card>
+            <GameHistory userId={user.uid} />
+          </div>
         );
       case 'loading':
         return (
@@ -272,6 +302,15 @@ export default function GamePage() {
             <Puzzle className="h-8 w-8" />
             <span>Word Scramble Dash</span>
         </a>
+        {user && (
+          <Button variant="ghost" size="sm" onClick={async () => {
+            await signOutUser(auth);
+            router.replace('/login');
+          }}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </Button>
+        )}
       </header>
       {renderContent()}
       <GameOverDialog
